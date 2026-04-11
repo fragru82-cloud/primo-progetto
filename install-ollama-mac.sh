@@ -48,21 +48,32 @@ else
 fi
 
 # ----- avvio del servizio Ollama in background -----
-if ! pgrep -x "ollama" >/dev/null 2>&1; then
-    info "Avvio del servizio Ollama..."
-    # L'app .cask installa Ollama.app; proviamo prima ad avviarla
+start_ollama_service() {
+    # 1° tentativo: apri l'app tramite path completo (più affidabile di `open -a`)
     if [[ -d "/Applications/Ollama.app" ]]; then
-        open -a Ollama
-    else
-        nohup ollama serve >/tmp/ollama.log 2>&1 &
+        open "/Applications/Ollama.app" >/dev/null 2>&1 || true
     fi
-    # Attende che il server sia pronto
-    for i in {1..20}; do
+    # 2° tentativo: avvia `ollama serve` in background se il daemon ancora non risponde
+    sleep 2
+    if ! curl -fsS http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
+        nohup ollama serve >/tmp/ollama.log 2>&1 &
+        disown || true
+    fi
+    # Attende fino a 30s che il server sia pronto
+    for _ in $(seq 1 30); do
         if curl -fsS http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
-            break
+            return 0
         fi
         sleep 1
     done
+    return 1
+}
+
+if curl -fsS http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
+    ok "Servizio Ollama già attivo."
+else
+    info "Avvio del servizio Ollama..."
+    start_ollama_service || true
 fi
 
 if curl -fsS http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
