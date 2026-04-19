@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(pwd)",
+      "Read",
+      "Glob",
+      "Grep"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '--- Stato repo ---' && git -C \"$CLAUDE_PROJECT_DIR\" status -s 2>/dev/null; echo '--- TODO ---'; sed -n '1,40p' \"$CLAUDE_PROJECT_DIR/TODO.md\" 2>/dev/null"
+          }
+        ]
+      }
+    ]
+  }
+}
