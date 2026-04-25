@@ -1,0 +1,202 @@
+{
+  "cantieri": [
+    {
+      "id": "C001",
+      "nome": "Restauro Palazzo Comunale di Roma",
+      "cig": "9A2B3C4D5E",
+      "cup": "F89J24000010001",
+      "indirizzo": {
+        "via": "Piazza del Campidoglio 1",
+        "cap": "00186",
+        "comune": "Roma",
+        "provincia": "RM"
+      },
+      "stato": "in_corso",
+      "data_inizio": "2025-09-15",
+      "data_fine_prevista": "2026-12-31",
+      "importo_contrattuale": 1200000.00,
+      "committente": {
+        "denominazione": "Comune di Roma Capitale",
+        "rup": "Ing. Marco Bianchi",
+        "email": "rup.lavori@comune.roma.it",
+        "pec": "protocollo@pec.comune.roma.it",
+        "telefono": "+39 06 6710 0000"
+      },
+      "impresa_appaltatrice": {
+        "ragione_sociale": "Edilizia Storica S.r.l.",
+        "piva": "01234567890",
+        "sede": "Roma"
+      },
+      "direttore_lavori": "Arch. Lucia Rossi",
+      "coordinatore_sicurezza": "Ing. Paolo Verdi",
+      "compliance": {
+        "durc": "2026-05-15",
+        "soa": "2027-03-10",
+        "antimafia": "2026-04-10",
+        "polizza_car": "2026-12-31",
+        "polizza_rc": "2026-08-15",
+        "pos": "2027-01-20",
+        "psc": "2026-09-30",
+        "formazione_sicurezza": "2026-05-20"
+      },
+      "sal": [
+        {
+          "numero": 1,
+          "mese": "2026-01",
+          "importo_periodo": 80000.00,
+          "lavorazioni": [
+            { "voce": "Allestimento cantiere e ponteggi", "quantita": 1, "importo": 35000.00 },
+            { "voce": "Rimozione intonaci ammalorati", "quantita": 420, "importo": 25000.00 },
+            { "voce": "Indagini diagnostiche murature", "quantita": 1, "importo": 20000.00 }
+          ]
+        },
+        {
+          "numero": 2,
+          "mese": "2026-02",
+          "importo_periodo": 145000.00,
+          "lavorazioni": [
+            { "voce": "Consolidamento murature portanti", "quantita": 380, "importo": 95000.00 },
+            { "voce": "Restauro cornici lapidee", "quantita": 65, "importo": 50000.00 }
+          ]
+        },
+        {
+          "numero": 3,
+          "mese": "2026-03",
+          "importo_periodo": 175000.00,
+          "lavorazioni": [
+            { "voce": "Restauro affreschi sala consiliare", "quantita": 220, "importo": 110000.00 },
+            { "voce": "Sostituzione infissi storici", "quantita": 14, "importo": 65000.00 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C002",
+      "nome": "Nuova Scuola Primaria di Milano - Quartiere Lambrate",
+      "cig": "B1C2D3E4F5",
+      "cup": "G45H23000020002",
+      "indirizzo": {
+        "via": "Via Rombon 12",
+        "cap": "20134",
+        "comune": "Milano",
+        "provincia": "MI"
+      },
+      "stato": "in_corso",
+      "data_inizio": "2025-04-01",
+      "data_fine_prevista": "2027-06-30",
+      "importo_contrattuale": 2500000.00,
+      "committente": {
+        "denominazione": "Comune di Milano - Direzione Edilizia Scolastica",
+        "rup": "Arch. Giulia Conti",
+        "email": "edilizia.scolastica@comune.milano.it",
+        "pec": "edilizia.scolastica@pec.comune.milano.it",
+        "telefono": "+39 02 8845 0000"
+      },
+      "impresa_appaltatrice": {
+        "ragione_sociale": "Costruzioni Lombarde S.p.A.",
+        "piva": "09876543210",
+        "sede": "Milano"
+      },
+      "direttore_lavori": "Ing. Andrea Galli",
+      "coordinatore_sicurezza": "Ing. Sara Moretti",
+      "compliance": {
+        "durc": "2026-07-30",
+        "soa": "2028-01-15",
+        "antimafia": "2026-11-05",
+        "polizza_car": "2027-06-30",
+        "polizza_rc": "2027-06-30",
+        "pos": "2026-06-10",
+        "psc": "2027-06-30",
+        "formazione_sicurezza": "2026-09-12"
+      },
+      "sal": [
+        {
+          "numero": 5,
+          "mese": "2026-01",
+          "importo_periodo": 220000.00,
+          "lavorazioni": [
+            { "voce": "Strutture in c.a. - piano primo", "quantita": 850, "importo": 145000.00 },
+            { "voce": "Tamponamenti esterni", "quantita": 420, "importo": 75000.00 }
+          ]
+        },
+        {
+          "numero": 6,
+          "mese": "2026-02",
+          "importo_periodo": 195000.00,
+          "lavorazioni": [
+            { "voce": "Strutture in c.a. - piano secondo", "quantita": 720, "importo": 130000.00 },
+            { "voce": "Impianti elettrici - prima fase", "quantita": 1, "importo": 65000.00 }
+          ]
+        },
+        {
+          "numero": 7,
+          "mese": "2026-03",
+          "importo_periodo": 240000.00,
+          "lavorazioni": [
+            { "voce": "Copertura e isolamento", "quantita": 980, "importo": 160000.00 },
+            { "voce": "Impianti termici - centrale", "quantita": 1, "importo": 80000.00 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C003",
+      "nome": "Manutenzione Strada Provinciale SP12",
+      "cig": "C2D3E4F5G6",
+      "cup": "H67I22000030003",
+      "indirizzo": {
+        "via": "SP12 km 4+200 - 12+800",
+        "cap": "31100",
+        "comune": "Treviso",
+        "provincia": "TV"
+      },
+      "stato": "sospeso",
+      "data_inizio": "2025-11-10",
+      "data_fine_prevista": "2026-08-31",
+      "importo_contrattuale": 450000.00,
+      "committente": {
+        "denominazione": "Provincia di Treviso",
+        "rup": "Geom. Roberto Toninato",
+        "email": "viabilita@provincia.treviso.it",
+        "pec": "protocollo.provincia.treviso@pec.it",
+        "telefono": "+39 0422 6562 00"
+      },
+      "impresa_appaltatrice": {
+        "ragione_sociale": "Asfalti Veneto S.r.l.",
+        "piva": "03456789012",
+        "sede": "Treviso"
+      },
+      "direttore_lavori": "Ing. Francesca Pellegrini",
+      "coordinatore_sicurezza": "Ing. Luca Ferrari",
+      "compliance": {
+        "durc": "2026-04-05",
+        "soa": "2026-12-20",
+        "antimafia": "2026-06-18",
+        "polizza_car": "2026-08-31",
+        "polizza_rc": "2026-08-31",
+        "pos": "2026-08-31",
+        "psc": "2026-08-31",
+        "formazione_sicurezza": "2026-04-30"
+      },
+      "sal": [
+        {
+          "numero": 1,
+          "mese": "2025-12",
+          "importo_periodo": 95000.00,
+          "lavorazioni": [
+            { "voce": "Fresatura pavimentazione esistente", "quantita": 8400, "importo": 55000.00 },
+            { "voce": "Risagomatura cassonetti", "quantita": 1200, "importo": 40000.00 }
+          ]
+        },
+        {
+          "numero": 2,
+          "mese": "2026-01",
+          "importo_periodo": 60000.00,
+          "lavorazioni": [
+            { "voce": "Posa binder", "quantita": 4200, "importo": 60000.00 }
+          ]
+        }
+      ]
+    }
+  ]
+}

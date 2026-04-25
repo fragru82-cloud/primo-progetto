@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "inveni-cantieri-mcp"
+version = "0.1.0"
+description = "MCP server INVENI Cantieri - estensione del Windows VPS Manager con tool dedicati alla gestione cantieri (anagrafica, documenti, compliance, SAL, notifiche committente)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "INVENI" }]
+dependencies = [
+    "mcp>=1.0.0",
+]
+
+[project.scripts]
+inveni-cantieri-mcp = "inveni_cantieri.server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["inveni_cantieri"]
