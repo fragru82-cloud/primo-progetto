@@ -1,92 +1,94 @@
-"""MCP server "INVENI Cantieri".
+"""MCP server "INVENI Cantieri" - fase di preparazione cantiere.
 
-Espone 5 tool per la gestione cantieri:
-- cantiere_anagrafica
-- genera_documento
-- scadenze_compliance
-- sal_progressivo
-- notifica_committente
+Espone 4 tool per gestire la preparazione documentale di un cantiere
+(condomini privati):
+
+- cantiere_anagrafica: dati del cantiere e committente
+- checklist_preparazione: confronta i file presenti nella cartella MEGA con
+  la master checklist (DURC, POS, dichiarazioni, ecc.)
+- stato_preparazione: sintesi % completamento + bloccanti
+- genera_documento: template di dichiarazioni, autocertificazioni, lettere
 
 Trasporto: stdio. Avviabile via `inveni-cantieri-mcp` (entry point del package)
 o `python -m inveni_cantieri.server`.
+
+Variabili d'ambiente:
+
+- INVENI_CANTIERI_DATA: percorso del file JSON (anagrafica + azienda)
+- INVENI_CANTIERI_BASE: percorso della cartella `cantieri e contratti`
 """
 
 from __future__ import annotations
 
 from mcp.server.fastmcp import FastMCP
 
-from . import compliance, documents, notifications, repo, sal
+from . import checklist, documents, repo, stato
 
 mcp = FastMCP("inveni-cantieri")
 
 
 @mcp.tool()
 def cantiere_anagrafica(cantiere_id: str) -> dict:
-    """Restituisce l'anagrafica completa del cantiere indicato.
+    """Restituisce l'anagrafica del cantiere: indirizzo, committente
+    (condominio + amministratore), CSE, importo, date previste, stato
+    (in_preparazione/attivo/chiuso) ed eventuali subappaltatori.
 
-    Include identificativi (CIG/CUP), ubicazione, committente con RUP e
-    contatti, impresa appaltatrice, importo contrattuale, date di inizio
-    e fine prevista, direttore lavori, coordinatore sicurezza e stato
-    corrente (in_corso/sospeso/ultimato).
+    ID disponibili: DONBOSCO, PETTIROSSO, CASALETTO.
     """
     c = repo.get_cantiere(cantiere_id)
     return {
         "id": c["id"],
         "nome": c["nome"],
-        "cig": c["cig"],
-        "cup": c["cup"],
-        "indirizzo": c["indirizzo"],
-        "stato": c["stato"],
-        "data_inizio": c["data_inizio"],
-        "data_fine_prevista": c["data_fine_prevista"],
-        "importo_contrattuale": c["importo_contrattuale"],
-        "committente": c["committente"],
-        "impresa_appaltatrice": c["impresa_appaltatrice"],
-        "direttore_lavori": c["direttore_lavori"],
-        "coordinatore_sicurezza": c["coordinatore_sicurezza"],
+        "tipo": c.get("tipo"),
+        "stato": c.get("stato"),
+        "indirizzo": c.get("indirizzo", {}),
+        "committente": c.get("committente", {}),
+        "cse": c.get("cse", {}),
+        "importo_contrattuale": c.get("importo_contrattuale"),
+        "data_inizio_prevista": c.get("data_inizio_prevista"),
+        "data_fine_prevista": c.get("data_fine_prevista"),
+        "subappaltatori": c.get("subappaltatori", []),
+        "cartella": str(repo.cantiere_folder(c)),
+        "note": c.get("note", ""),
     }
 
 
 @mcp.tool()
-def genera_documento(tipo: str, cantiere_id: str) -> dict:
-    """Genera un documento di cantiere in formato markdown.
+def checklist_preparazione(cantiere_id: str) -> dict:
+    """Verifica i file presenti nella cartella del cantiere su MEGA contro la
+    master checklist (Documenti aziendali, Sicurezza, Dichiarazioni,
+    Contrattualistica, Corrispondenza CSE, Subappalti).
 
-    Tipi ammessi: verbale_inizio_lavori, verbale_sospensione, verbale_ripresa,
-    verbale_ultimazione, sal, certificato_pagamento, comunicazione_committente,
-    ordine_di_servizio.
+    Per ogni voce attesa indica `presente: true/false`, l'eventuale file
+    riconosciuto, e se è obbligatorio o opzionale. Utile per capire cosa
+    manca prima di poter avviare il cantiere.
+    """
+    return checklist.checklist_preparazione(cantiere_id)
+
+
+@mcp.tool()
+def stato_preparazione(cantiere_id: str) -> dict:
+    """Riepilogo sintetico dello stato di preparazione del cantiere:
+    percentuale di completamento, lista documenti obbligatori mancanti
+    (bloccanti), opzionali mancanti, e flag `pronto_a_partire`.
+    """
+    return stato.stato_preparazione(cantiere_id)
+
+
+@mcp.tool()
+def genera_documento(tipo: str, cantiere_id: str) -> dict:
+    """Genera il template di un documento della fase di preparazione.
+
+    Tipi ammessi: dichiarazione_organico_medio,
+    dichiarazione_idoneita_tecnico_professionale,
+    autodichiarazione_patente_crediti, elenco_personale_impiegato,
+    lettera_accompagnamento_pos, accettazione_psc,
+    verbale_presa_visione_psc, pec_riscontro_cse,
+    comunicazione_subappalto, comunicazione_amministratore.
+
+    Output in markdown, pronto da copiare in Word.
     """
     return documents.genera(tipo, cantiere_id)
-
-
-@mcp.tool()
-def scadenze_compliance(cantiere_id: str) -> dict:
-    """Calcola le scadenze di compliance del cantiere (DURC, SOA, antimafia,
-    polizze, POS, PSC, formazione sicurezza), con stato ok / in_scadenza
-    (≤ 30 giorni) / scaduto e numero di voci critiche.
-    """
-    return compliance.scadenze(cantiere_id)
-
-
-@mcp.tool()
-def sal_progressivo(cantiere_id: str, mese: str) -> dict:
-    """Restituisce il SAL del mese richiesto con importo del periodo,
-    importo progressivo, percentuale di completamento, ritenuta di garanzia
-    (0,5%), importo netto da liquidare e dettaglio lavorazioni.
-
-    Il parametro `mese` è nel formato 'YYYY-MM' (es. '2026-03').
-    """
-    return sal.sal_progressivo(cantiere_id, mese)
-
-
-@mcp.tool()
-def notifica_committente(cantiere_id: str, evento: str) -> dict:
-    """Costruisce e simula l'invio (PEC) al committente di una notifica
-    relativa a un evento di cantiere.
-
-    Eventi ammessi: inizio_lavori, sospensione, ripresa, ultimazione,
-    sal_emesso, anomalia, richiesta_variante.
-    """
-    return notifications.notifica(cantiere_id, evento)
 
 
 def main() -> None:

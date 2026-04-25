@@ -1,170 +1,282 @@
-"""Generazione documenti tipici di cantiere in formato markdown."""
+"""Generazione documenti tipici della fase di preparazione cantiere
+(condomini privati). Output in markdown, pronto da copiare in Word.
+"""
 
 from __future__ import annotations
 
 import uuid
 from datetime import date
 
-from . import repo, sal as sal_module
+from . import repo
 
 TIPI_AMMESSI = (
-    "verbale_inizio_lavori",
-    "verbale_sospensione",
-    "verbale_ripresa",
-    "verbale_ultimazione",
-    "sal",
-    "certificato_pagamento",
-    "comunicazione_committente",
-    "ordine_di_servizio",
+    "dichiarazione_organico_medio",
+    "dichiarazione_idoneita_tecnico_professionale",
+    "autodichiarazione_patente_crediti",
+    "elenco_personale_impiegato",
+    "lettera_accompagnamento_pos",
+    "accettazione_psc",
+    "verbale_presa_visione_psc",
+    "pec_riscontro_cse",
+    "comunicazione_subappalto",
+    "comunicazione_amministratore",
 )
 
 
-def _intestazione(cantiere: dict) -> str:
-    ind = cantiere["indirizzo"]
+def _intestazione_azienda(az: dict) -> str:
+    parti = [f"**{az.get('ragione_sociale') or 'INVENI S.R.L.'}**"]
+    if az.get("sede_legale"):
+        parti.append(f"Sede legale: {az['sede_legale']}")
+    if az.get("partita_iva"):
+        parti.append(f"P.IVA: {az['partita_iva']}")
+    if az.get("titolare"):
+        parti.append(f"Legale rappresentante: {az['titolare']}")
+    if az.get("pec"):
+        parti.append(f"PEC: {az['pec']}")
+    return "  \n".join(parti)
+
+
+def _intestazione_cantiere(c: dict) -> str:
+    ind = c.get("indirizzo", {})
+    addr = " ".join(filter(None, [ind.get("via"), ind.get("cap"), ind.get("comune"), f"({ind['provincia']})" if ind.get("provincia") else None]))
     return (
-        f"# {cantiere['nome']}\n\n"
-        f"- **Cantiere ID**: {cantiere['id']}\n"
-        f"- **CIG**: {cantiere['cig']} - **CUP**: {cantiere['cup']}\n"
-        f"- **Ubicazione**: {ind['via']}, {ind['cap']} {ind['comune']} ({ind['provincia']})\n"
-        f"- **Committente**: {cantiere['committente']['denominazione']}\n"
-        f"- **RUP**: {cantiere['committente']['rup']}\n"
-        f"- **Impresa**: {cantiere['impresa_appaltatrice']['ragione_sociale']}\n"
-        f"- **Direttore lavori**: {cantiere['direttore_lavori']}\n"
-        f"- **CSE**: {cantiere['coordinatore_sicurezza']}\n"
+        f"**Cantiere**: {c['nome']}\n"
+        f"**Ubicazione**: {addr or '___'}\n"
+        f"**Committente**: {c['committente'].get('denominazione') or '___'}\n"
     )
 
 
-def _verbale_inizio(cantiere: dict, oggi: str) -> str:
+def _dichiarazione_organico_medio(c: dict, az: dict, oggi: str) -> str:
     return (
-        _intestazione(cantiere)
-        + f"\n## Verbale di consegna e inizio lavori\n\n"
-        f"In data {oggi}, presso il cantiere in oggetto, il Direttore dei Lavori "
-        f"{cantiere['direttore_lavori']} ha proceduto alla consegna dei lavori "
-        f"all'Impresa {cantiere['impresa_appaltatrice']['ragione_sociale']}.\n\n"
-        f"L'Impresa dichiara di aver preso visione dei luoghi e di accettare "
-        f"la consegna senza riserve. I lavori avranno inizio in data {cantiere['data_inizio']} "
-        f"e dovranno concludersi entro il {cantiere['data_fine_prevista']}.\n\n"
-        f"Importo contrattuale: € {cantiere['importo_contrattuale']:,.2f}.\n"
+        f"# Dichiarazione organico medio annuo\n"
+        f"_Resa ai sensi del DPR 445/2000 e ss.mm.ii._\n\n"
+        f"{_intestazione_azienda(az)}\n\n"
+        f"{_intestazione_cantiere(c)}\n\n"
+        f"Il sottoscritto **{az.get('titolare') or '___'}**, in qualità di "
+        f"legale rappresentante di **{az.get('ragione_sociale') or 'INVENI S.R.L.'}**, "
+        f"consapevole delle responsabilità penali in caso di dichiarazioni mendaci,\n\n"
+        f"## DICHIARA\n\n"
+        f"che l'organico medio annuo, suddiviso per qualifica, impiegato dall'impresa "
+        f"per i lavori del cantiere in oggetto è il seguente:\n\n"
+        f"| Qualifica | n. lavoratori |\n|---|---:|\n"
+        f"| Operai specializzati | __ |\n"
+        f"| Operai qualificati | __ |\n"
+        f"| Operai comuni | __ |\n"
+        f"| Impiegati tecnici | __ |\n"
+        f"| Apprendisti | __ |\n"
+        f"| **Totale** | **__** |\n\n"
+        f"L'impresa applica il **CCNL Edilizia** ed è iscritta a **Cassa Edile**.\n\n"
+        f"Luogo e data: ___________, {oggi}\n\n"
+        f"Firma del legale rappresentante  \n"
+        f"_______________________________\n"
     )
 
 
-def _verbale_sospensione(cantiere: dict, oggi: str) -> str:
+def _dichiarazione_idoneita_tecnico_professionale(c: dict, az: dict, oggi: str) -> str:
     return (
-        _intestazione(cantiere)
-        + f"\n## Verbale di sospensione lavori\n\n"
-        f"In data {oggi}, il Direttore dei Lavori dispone la sospensione "
-        f"delle lavorazioni per cause da specificare nel corpo del verbale "
-        f"(es. avverse condizioni meteo, cause di forza maggiore, "
-        f"ritrovamenti archeologici).\n\n"
-        f"La sospensione decorre dal {oggi}. La ripresa sarà comunicata "
-        f"con apposito verbale.\n"
+        f"# Dichiarazione di idoneità tecnico-professionale\n"
+        f"_ai sensi dell'art. 90 c. 9 lett. a) e All. XVII del D.Lgs. 81/2008_\n\n"
+        f"{_intestazione_azienda(az)}\n\n"
+        f"{_intestazione_cantiere(c)}\n\n"
+        f"Il sottoscritto **{az.get('titolare') or '___'}**, legale rappresentante di "
+        f"**{az.get('ragione_sociale') or 'INVENI S.R.L.'}**,\n\n"
+        f"## DICHIARA\n\n"
+        f"sotto la propria responsabilità che l'impresa è in possesso dei requisiti di "
+        f"idoneità tecnico-professionale di cui all'All. XVII del D.Lgs. 81/2008 e in "
+        f"particolare:\n\n"
+        f"- iscrizione alla CCIAA con oggetto sociale coerente con i lavori da eseguire;\n"
+        f"- DVR aziendale redatto e aggiornato;\n"
+        f"- DURC regolare in corso di validità;\n"
+        f"- nomina del RSPP, del Medico Competente, degli addetti emergenze e primo soccorso;\n"
+        f"- formazione e informazione dei lavoratori (art. 37 D.Lgs. 81/2008);\n"
+        f"- consegna ai lavoratori dei DPI necessari;\n"
+        f"- polizza RCT/RCO in corso di validità;\n"
+        f"- iscrizione alla Cassa Edile e applicazione del CCNL di settore.\n\n"
+        f"Si allega copia della documentazione comprovante quanto sopra dichiarato.\n\n"
+        f"Luogo e data: ___________, {oggi}\n\n"
+        f"Firma del legale rappresentante  \n"
+        f"_______________________________\n"
     )
 
 
-def _verbale_ripresa(cantiere: dict, oggi: str) -> str:
+def _autodichiarazione_patente_crediti(c: dict, az: dict, oggi: str) -> str:
     return (
-        _intestazione(cantiere)
-        + f"\n## Verbale di ripresa lavori\n\n"
-        f"In data {oggi}, essendo cessate le cause che avevano determinato "
-        f"la sospensione, il Direttore dei Lavori dispone la ripresa "
-        f"delle lavorazioni a far data da oggi.\n\n"
-        f"Il termine contrattuale è prorogato in misura corrispondente "
-        f"al periodo di sospensione.\n"
+        f"# Autodichiarazione patente a crediti\n"
+        f"_ai sensi dell'art. 27 D.Lgs. 81/2008 (D.L. 19/2024 conv. L. 56/2024)_\n\n"
+        f"{_intestazione_azienda(az)}\n\n"
+        f"{_intestazione_cantiere(c)}\n\n"
+        f"Il sottoscritto **{az.get('titolare') or '___'}**, legale rappresentante di "
+        f"**{az.get('ragione_sociale') or 'INVENI S.R.L.'}**,\n\n"
+        f"## DICHIARA\n\n"
+        f"di essere in possesso della **patente a crediti** rilasciata ai sensi "
+        f"dell'art. 27 D.Lgs. 81/2008, e segnatamente:\n\n"
+        f"- **Codice impresa**: ____________________\n"
+        f"- **Data di rilascio**: ____________________\n"
+        f"- **Punteggio attuale**: ____ crediti (≥ 15 richiesti per operare in cantieri temporanei o mobili).\n\n"
+        f"Si allega ricevuta del portale INL.\n\n"
+        f"Luogo e data: ___________, {oggi}\n\n"
+        f"Firma del legale rappresentante  \n"
+        f"_______________________________\n"
     )
 
 
-def _verbale_ultimazione(cantiere: dict, oggi: str) -> str:
+def _elenco_personale_impiegato(c: dict, az: dict, oggi: str) -> str:
     return (
-        _intestazione(cantiere)
-        + f"\n## Verbale di ultimazione lavori\n\n"
-        f"In data {oggi}, l'Impresa appaltatrice comunica al Direttore "
-        f"dei Lavori l'avvenuta ultimazione delle opere oggetto del contratto.\n\n"
-        f"Il Direttore dei Lavori, effettuata visita in cantiere, "
-        f"prende atto dell'ultimazione e dispone le verifiche propedeutiche "
-        f"al collaudo / certificato di regolare esecuzione.\n"
+        f"# Elenco del personale impiegato\n\n"
+        f"{_intestazione_azienda(az)}\n\n"
+        f"{_intestazione_cantiere(c)}\n\n"
+        f"Si trasmette l'elenco del personale dipendente impiegato presso il cantiere "
+        f"in oggetto, completo di qualifica, mansione e estremi formativi:\n\n"
+        f"| Cognome e Nome | Mansione | Qualifica | N° matr. INAIL | Form. base art. 37 | Form. specifica | Visita medica |\n"
+        f"|---|---|---|---|---|---|---|\n"
+        f"| | | | | | | |\n"
+        f"| | | | | | | |\n\n"
+        f"Eventuali aggiornamenti saranno tempestivamente comunicati al CSE.\n\n"
+        f"Luogo e data: ___________, {oggi}\n\n"
+        f"Firma del legale rappresentante  \n"
+        f"_______________________________\n"
     )
 
 
-def _sal(cantiere: dict, oggi: str) -> str:
-    sal_list = sorted(cantiere.get("sal", []), key=lambda s: s["mese"])
-    if not sal_list:
-        return _intestazione(cantiere) + "\n## SAL\n\n_Nessun SAL emesso._\n"
-    ultimo = sal_list[-1]
-    dati = sal_module.sal_progressivo(cantiere["id"], ultimo["mese"])
-    righe = "\n".join(
-        f"| {l['voce']} | {l['quantita']} | € {l['importo']:,.2f} |"
-        for l in dati["lavorazioni"]
-    )
+def _lettera_accompagnamento_pos(c: dict, az: dict, oggi: str) -> str:
+    cse = c.get("cse", {})
     return (
-        _intestazione(cantiere)
-        + f"\n## Stato Avanzamento Lavori n. {dati['numero_sal']} - mese {dati['mese']}\n\n"
-        f"Emesso il {oggi}.\n\n"
-        f"- Importo del periodo: € {dati['importo_periodo']:,.2f}\n"
-        f"- Importo progressivo: € {dati['importo_progressivo']:,.2f} "
-        f"({dati['percentuale_completamento']}% del contratto)\n"
-        f"- Ritenuta di garanzia (0,5%): € {dati['ritenuta_garanzia']:,.2f}\n"
-        f"- Importo netto da liquidare: € {dati['importo_netto_da_liquidare']:,.2f}\n\n"
-        f"### Lavorazioni del periodo\n\n"
-        f"| Voce | Quantità | Importo |\n|---|---:|---:|\n{righe}\n"
+        f"# Trasmissione POS al Coordinatore per la Sicurezza in fase di Esecuzione\n\n"
+        f"Spett.le {cse.get('nome') or 'Sig. CSE'},\n"
+        f"{('e-mail/PEC: ' + cse.get('email')) if cse.get('email') else ''}\n\n"
+        f"{_intestazione_cantiere(c)}\n\n"
+        f"Con la presente, in data {oggi}, **{az.get('ragione_sociale') or 'INVENI S.R.L.'}** "
+        f"trasmette il **Piano Operativo di Sicurezza (POS)** redatto ai sensi dell'art. 89 "
+        f"e All. XV del D.Lgs. 81/2008, riferito alle proprie lavorazioni nel cantiere in oggetto.\n\n"
+        f"Il POS è coordinato con il PSC ricevuto e tiene conto delle prescrizioni "
+        f"contenute nei documenti di sicurezza già consegnati.\n\n"
+        f"Si resta a disposizione per qualsiasi integrazione o chiarimento.\n\n"
+        f"Cordiali saluti,\n\n"
+        f"Il legale rappresentante  \n"
+        f"_{az.get('titolare') or '___'}_\n"
     )
 
 
-def _certificato_pagamento(cantiere: dict, oggi: str) -> str:
-    sal_list = sorted(cantiere.get("sal", []), key=lambda s: s["mese"])
-    if not sal_list:
-        return (
-            _intestazione(cantiere)
-            + "\n## Certificato di pagamento\n\n_Nessun SAL disponibile._\n"
-        )
-    dati = sal_module.sal_progressivo(cantiere["id"], sal_list[-1]["mese"])
+def _accettazione_psc(c: dict, az: dict, oggi: str) -> str:
     return (
-        _intestazione(cantiere)
-        + f"\n## Certificato di pagamento n. {dati['numero_sal']}\n\n"
-        f"Emesso il {oggi} a fronte del SAL n. {dati['numero_sal']} "
-        f"(mese {dati['mese']}).\n\n"
-        f"Si certifica che all'Impresa {cantiere['impresa_appaltatrice']['ragione_sociale']} "
-        f"compete il pagamento di **€ {dati['importo_netto_da_liquidare']:,.2f}** "
-        f"(al netto della ritenuta di garanzia dello 0,5%).\n\n"
-        f"Il Direttore dei Lavori: {cantiere['direttore_lavori']}.\n"
+        f"# Verbale di accettazione del PSC\n\n"
+        f"{_intestazione_azienda(az)}\n\n"
+        f"{_intestazione_cantiere(c)}\n\n"
+        f"Il sottoscritto **{az.get('titolare') or '___'}**, in qualità di legale "
+        f"rappresentante di **{az.get('ragione_sociale') or 'INVENI S.R.L.'}**, "
+        f"impresa appaltatrice/esecutrice delle lavorazioni nel cantiere in oggetto,\n\n"
+        f"## DICHIARA\n\n"
+        f"di aver ricevuto, esaminato e compreso il **Piano di Sicurezza e Coordinamento (PSC)** "
+        f"redatto dal Coordinatore per la Sicurezza in fase di Progettazione, e\n\n"
+        f"## ACCETTA\n\n"
+        f"integralmente i contenuti del PSC, impegnandosi a darne attuazione e a renderne "
+        f"edotti i lavoratori e gli eventuali subappaltatori.\n\n"
+        f"Eventuali proposte di modifica saranno presentate al CSE prima dell'inizio "
+        f"delle lavorazioni interessate, ai sensi dell'art. 100 c. 5 D.Lgs. 81/2008.\n\n"
+        f"Luogo e data: ___________, {oggi}\n\n"
+        f"Firma del legale rappresentante  \n"
+        f"_______________________________\n"
     )
 
 
-def _comunicazione_committente(cantiere: dict, oggi: str) -> str:
+def _verbale_presa_visione_psc(c: dict, az: dict, oggi: str) -> str:
     return (
-        _intestazione(cantiere)
-        + f"\n## Comunicazione al committente\n\n"
-        f"Spett.le {cantiere['committente']['denominazione']},\n"
-        f"alla c.a. del RUP {cantiere['committente']['rup']}.\n\n"
-        f"Con la presente, in data {oggi}, si trasmette aggiornamento "
-        f"sull'andamento dei lavori del cantiere in oggetto. "
-        f"Per ogni dettaglio o richiesta di chiarimento si resta "
-        f"a disposizione ai recapiti contrattuali.\n\n"
-        f"Cordiali saluti,\n{cantiere['direttore_lavori']}\n"
+        f"# Verbale di presa visione del PSC da parte dei lavoratori\n\n"
+        f"{_intestazione_azienda(az)}\n\n"
+        f"{_intestazione_cantiere(c)}\n\n"
+        f"I sottoscritti lavoratori dichiarano di aver preso visione del **Piano di "
+        f"Sicurezza e Coordinamento (PSC)** del cantiere in oggetto, illustrato dal "
+        f"datore di lavoro / preposto _{az.get('preposto') or '___'}_, e di averne "
+        f"compreso i contenuti in materia di rischi specifici e misure di prevenzione.\n\n"
+        f"| Cognome e Nome | Mansione | Firma | Data |\n|---|---|---|---|\n"
+        f"| | | | {oggi} |\n"
+        f"| | | | {oggi} |\n"
+        f"| | | | {oggi} |\n\n"
+        f"Il preposto: _{az.get('preposto') or '___'}_  \n"
+        f"Firma: _______________________________\n"
     )
 
 
-def _ordine_di_servizio(cantiere: dict, oggi: str) -> str:
+def _pec_riscontro_cse(c: dict, az: dict, oggi: str) -> str:
+    cse = c.get("cse", {})
     return (
-        _intestazione(cantiere)
-        + f"\n## Ordine di servizio\n\n"
-        f"In data {oggi} il Direttore dei Lavori {cantiere['direttore_lavori']} "
-        f"impartisce all'Impresa {cantiere['impresa_appaltatrice']['ragione_sociale']} "
-        f"il presente ordine di servizio relativamente alle lavorazioni "
-        f"oggetto del contratto.\n\n"
-        f"L'Impresa è tenuta ad eseguire quanto disposto, fatta salva la facoltà "
-        f"di iscrivere riserva nei termini e con le modalità di legge.\n"
+        f"# PEC al Coordinatore per la Sicurezza in fase di Esecuzione\n\n"
+        f"**A**: {cse.get('email') or '<pec_cse@...>'}\n"
+        f"**Oggetto**: Riscontro CSE - {c['nome']} - trasmissione documentazione\n\n"
+        f"Spett.le {cse.get('nome') or 'CSE'},\n\n"
+        f"in riscontro alla Sua richiesta del __/__/____, **{az.get('ragione_sociale') or 'INVENI S.R.L.'}** "
+        f"trasmette in allegato la seguente documentazione relativa al cantiere {c['nome']}:\n\n"
+        f"- POS aggiornato\n"
+        f"- Dichiarazione di idoneità tecnico-professionale (All. XVII D.Lgs. 81/2008)\n"
+        f"- Autodichiarazione patente a crediti\n"
+        f"- DURC in corso di validità\n"
+        f"- Polizza RCT/RCO\n"
+        f"- Elenco del personale impiegato con relativi attestati\n"
+        f"- Elenco attrezzature e mezzi d'opera\n\n"
+        f"Si resta a disposizione per ogni integrazione.\n\n"
+        f"Distinti saluti,\n\n"
+        f"_{az.get('titolare') or '___'}_  \n"
+        f"Legale rappresentante {az.get('ragione_sociale') or 'INVENI S.R.L.'}\n"
+        f"\n_PEC inviata in data {oggi}_\n"
+    )
+
+
+def _comunicazione_subappalto(c: dict, az: dict, oggi: str) -> str:
+    cse = c.get("cse", {})
+    subs = c.get("subappaltatori", [])
+    elenco = "\n".join(f"- **{s.get('ragione_sociale')}** ({s.get('categoria') or 'lavorazione da specificare'})" for s in subs) or "- ___"
+    return (
+        f"# Comunicazione di subappalto\n"
+        f"_ai sensi dell'art. 105 D.Lgs. 50/2016 e art. 1656 c.c._\n\n"
+        f"Spett.le Committente {c['committente'].get('denominazione') or '___'}\n"
+        f"e p.c. CSE {cse.get('nome') or '___'}\n\n"
+        f"{_intestazione_cantiere(c)}\n\n"
+        f"Con la presente, **{az.get('ragione_sociale') or 'INVENI S.R.L.'}** comunica "
+        f"che intende affidare in subappalto le seguenti lavorazioni alle imprese sottoindicate:\n\n"
+        f"{elenco}\n\n"
+        f"Per ciascun subappaltatore si trasmette la documentazione prevista dall'art. 105 "
+        f"D.Lgs. 50/2016 (visura, DURC, INAIL, polizze, POS, dichiarazione di idoneità "
+        f"tecnico-professionale, attestati formazione del personale).\n\n"
+        f"Si resta in attesa di formale autorizzazione.\n\n"
+        f"Luogo e data: ___________, {oggi}\n\n"
+        f"_{az.get('titolare') or '___'}_  \n"
+        f"Legale rappresentante\n"
+    )
+
+
+def _comunicazione_amministratore(c: dict, az: dict, oggi: str) -> str:
+    com = c.get("committente", {})
+    return (
+        f"# Comunicazione all'Amministratore di Condominio\n\n"
+        f"**A**: {com.get('amministratore_studio') or 'Studio amministrazione'} - "
+        f"{com.get('amministratore_persona') or 'Sig./Sig.ra ___'}\n"
+        f"**E-mail**: {com.get('email') or '___'}\n"
+        f"**PEC**: {com.get('pec') or '___'}\n\n"
+        f"Oggetto: {c['nome']} - aggiornamento sull'avvio dei lavori\n\n"
+        f"Egregio Amministratore,\n\n"
+        f"con la presente, in data {oggi}, **{az.get('ragione_sociale') or 'INVENI S.R.L.'}** "
+        f"trasmette aggiornamento in merito alla preparazione del cantiere in oggetto.\n\n"
+        f"La documentazione di sicurezza e gli adempimenti propedeutici sono in corso "
+        f"di completamento. Sarà nostra cura comunicare tempestivamente la data di "
+        f"effettivo avvio dei lavori, previa firma del verbale di consegna.\n\n"
+        f"Restiamo a disposizione per ogni chiarimento.\n\n"
+        f"Cordiali saluti,\n\n"
+        f"_{az.get('titolare') or '___'}_  \n"
+        f"Legale rappresentante {az.get('ragione_sociale') or 'INVENI S.R.L.'}\n"
     )
 
 
 _GENERATORI = {
-    "verbale_inizio_lavori": _verbale_inizio,
-    "verbale_sospensione": _verbale_sospensione,
-    "verbale_ripresa": _verbale_ripresa,
-    "verbale_ultimazione": _verbale_ultimazione,
-    "sal": _sal,
-    "certificato_pagamento": _certificato_pagamento,
-    "comunicazione_committente": _comunicazione_committente,
-    "ordine_di_servizio": _ordine_di_servizio,
+    "dichiarazione_organico_medio": _dichiarazione_organico_medio,
+    "dichiarazione_idoneita_tecnico_professionale": _dichiarazione_idoneita_tecnico_professionale,
+    "autodichiarazione_patente_crediti": _autodichiarazione_patente_crediti,
+    "elenco_personale_impiegato": _elenco_personale_impiegato,
+    "lettera_accompagnamento_pos": _lettera_accompagnamento_pos,
+    "accettazione_psc": _accettazione_psc,
+    "verbale_presa_visione_psc": _verbale_presa_visione_psc,
+    "pec_riscontro_cse": _pec_riscontro_cse,
+    "comunicazione_subappalto": _comunicazione_subappalto,
+    "comunicazione_amministratore": _comunicazione_amministratore,
 }
 
 
@@ -176,8 +288,9 @@ def genera(tipo: str, cantiere_id: str) -> dict:
         )
 
     cantiere = repo.get_cantiere(cantiere_id)
+    az = repo.azienda()
     oggi = date.today().isoformat()
-    contenuto = _GENERATORI[tipo](cantiere, oggi)
+    contenuto = _GENERATORI[tipo](cantiere, az, oggi)
 
     return {
         "documento_id": f"DOC-{uuid.uuid4().hex[:8].upper()}",

@@ -1,154 +1,146 @@
-# INVENI Cantieri - MCP server
+# INVENI Cantieri - MCP server (fase di preparazione)
 
-Estensione MCP del Windows VPS Manager con tool dedicati alla gestione
-cantieri (edilizia / appalti pubblici, dominio italiano).
+Server MCP per Claude Desktop dedicato alla **fase di preparazione** dei
+cantieri INVENI (condomini privati). Aiuta a sapere cosa hai e cosa ti manca
+prima di poter avviare un cantiere, e a generare i documenti standard.
 
-## Tool esposti
+## Tool esposti (4)
 
-| Tool | Parametri | Cosa fa |
-|---|---|---|
-| `cantiere_anagrafica` | `cantiere_id` | Anagrafica completa: CIG/CUP, ubicazione, committente con RUP, impresa, importo, date, DL, CSE, stato. |
-| `genera_documento` | `tipo`, `cantiere_id` | Genera in markdown verbali (inizio / sospensione / ripresa / ultimazione), SAL, certificato di pagamento, comunicazione al committente, ordine di servizio. |
-| `scadenze_compliance` | `cantiere_id` | Stato DURC, SOA, antimafia, polizze CAR/RC, POS, PSC, formazione sicurezza, con flag `ok` / `in_scadenza` (≤ 30 gg) / `scaduto`. |
-| `sal_progressivo` | `cantiere_id`, `mese` (`YYYY-MM`) | SAL del mese con importo periodo, progressivo, % completamento, ritenuta 0,5%, netto da liquidare, dettaglio lavorazioni. |
-| `notifica_committente` | `cantiere_id`, `evento` | Costruisce e simula invio PEC al RUP per: inizio, sospensione, ripresa, ultimazione, SAL emesso, anomalia, richiesta variante. |
+| Tool | Cosa fa |
+|---|---|
+| `cantiere_anagrafica` | Anagrafica del cantiere: indirizzo, condominio + amministratore, CSE, importo, date previste, stato, subappaltatori. |
+| `checklist_preparazione` | Va a leggere la **vera cartella** del cantiere su MEGA, confronta i file presenti con la master checklist (Documenti aziendali, Sicurezza, Dichiarazioni, Contrattualistica, Corrispondenza CSE, Subappalti) e dice per ognuno se è presente o manca. |
+| `stato_preparazione` | Sintesi rapida: % completamento, documenti **obbligatori** mancanti (bloccanti), opzionali mancanti, flag `pronto_a_partire`. |
+| `genera_documento` | Template markdown di: dichiarazione organico medio, idoneità tecnico-professionale, autodichiarazione patente crediti, elenco personale, lettera accompagnamento POS, accettazione PSC, verbale presa visione PSC, PEC riscontro CSE, comunicazione subappalto, comunicazione amministratore. |
+
+## Cantieri tracciati (v0.2)
+
+- `DONBOSCO` - Condominio Don Bosco 7
+- `PETTIROSSO` - Condominio Il Pettirosso
+- `CASALETTO` - Cantiere Casaletto Vaprio
+
+## Master checklist (cosa cerca il tool)
+
+### 01 - Documenti Aziendali (uguali per tutti i cantieri INVENI)
+Visura camerale, Certificato INAIL, DOMA, Polizza RCT/RCO, Visite mediche,
+Ricevuta patente crediti, Documento identità titolare, **DURC**.
+
+### 02 - Sicurezza Cantiere
+DVR, Verbale RSPP, Attestato RSPP, Nomina medico competente, Verbale RLS,
+Verbale preposto, Verbale emergenze, **POS** (specifico cantiere), Elenco
+personale, Elenco attrezzature/mezzi, Verbale presa visione PSC.
+
+### 04 - Dichiarazioni e Autocertificazioni
+Idoneità tecnico-professionale, Autodichiarazione patente crediti,
+Dichiarazione organico medio annuo.
+
+### 05 - Deleghe e Contrattualistica
+Preventivo firmato, Capitolato firmato, Accettazione PSC, Delega fattura/pagamento.
+
+### 06 - Corrispondenza CSE
+PEC riscontro CSE.
+
+### 07 - Subappalti
+Per ogni subappaltatore registrato in anagrafica: visura, DURC, INAIL,
+polizza, POS, idoneità tecnico-professionale.
 
 ## Requisiti
 
-- Python 3.10+ (Mac: già preinstallato; Windows: scaricare da [python.org](https://www.python.org/))
-- Claude Desktop (Mac e/o Windows)
-- (Opzionale) MEGA installato e sincronizzato sulle macchine che vuoi tengano allineati i dati
+- Python 3.10+ (Mac: già preinstallato)
+- Claude Desktop
+- MEGA installato e sincronizzato
 
-## Installazione
+## Installazione (Mac)
 
-Da dentro la cartella del progetto:
+Da Terminale:
 
 ```bash
-pip install -e .
+mkdir -p ~/Projects
+cd ~/Projects
+git clone -b claude/add-inveni-cantieri-tools-w1SXo \
+  https://github.com/fragru82-cloud/primo-progetto.git inveni-cantieri
+cd inveni-cantieri
+python3 -m venv .venv
+.venv/bin/pip install -e .
+echo "$PWD/.venv/bin/inveni-cantieri-mcp"
 ```
 
-Crea il comando `inveni-cantieri-mcp` (su Windows: `inveni-cantieri-mcp.exe`).
+L'ultimo `echo` stampa il percorso assoluto del comando: ti servirà nel
+config di Claude Desktop.
 
-## Setup condiviso via MEGA (Mac + PC ufficio)
+## Configurazione Claude Desktop
 
-L'MCP server è un programma **locale**: lo installi su ogni macchina che vuoi
-usare. Per condividere i dati dei cantieri tra Mac e PC ufficio, il file
-`cantieri.json` va salvato nella cartella **MEGA condivisa**: entrambe le
-installazioni leggono lo stesso file e MEGA si occupa della sincronizzazione.
-
-### 1. Prepara la cartella in MEGA (una sola volta, da Mac o da PC)
-
-Crea dentro la tua cartella MEGA una sottocartella `INVENI` e copiaci dentro
-il file `cantieri.json` di esempio del progetto:
-
-```
-MEGA/INVENI/cantieri.json
-```
-
-MEGA lo sincronizzerà automaticamente sulla seconda macchina.
-
-### 2. Configurazione su Mac
-
-Modifica il file di configurazione di Claude Desktop:
-
-`~/Library/Application Support/Claude/claude_desktop_config.json`
+File: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
 ```json
 {
   "mcpServers": {
     "inveni-cantieri": {
-      "command": "inveni-cantieri-mcp",
+      "command": "/Users/aloefrancesco/Projects/inveni-cantieri/.venv/bin/inveni-cantieri-mcp",
       "env": {
-        "INVENI_CANTIERI_DATA": "/Users/aloefrancesco/Documents/MEGA/INVENI/cantieri.json"
+        "INVENI_CANTIERI_DATA": "/Users/aloefrancesco/MEGA/SOCIETA/Inveni/MCP-Cantieri/cantieri.json",
+        "INVENI_CANTIERI_BASE": "/Users/aloefrancesco/MEGA/SOCIETA/Inveni/cantieri e contratti"
       }
     }
   }
 }
 ```
 
-> ⚠️ Verifica il nome esatto della tua cartella MEGA. Da Terminale:
-> `ls -d ~/Documents/MEGA*` — potrebbe essere `MEGA`, `MEGAsync`, ecc.
-> Adatta il percorso di conseguenza.
+Riavvia Claude Desktop dopo aver salvato.
 
-Riavvia Claude Desktop. Lo strumento `inveni-cantieri` deve comparire fra gli
-MCP attivi.
+### Variabili d'ambiente
 
-### 3. Configurazione su PC ufficio (Windows)
+| Variabile | Cosa indica |
+|---|---|
+| `INVENI_CANTIERI_DATA` | Percorso del file JSON con anagrafica + dati azienda. Va dentro `MEGA/SOCIETA/Inveni/MCP-Cantieri/cantieri.json` per essere sincronizzato col PC ufficio. |
+| `INVENI_CANTIERI_BASE` | Percorso della cartella `cantieri e contratti` che contiene le sottocartelle dei singoli cantieri. Il tool `checklist_preparazione` la legge per verificare quali file sono presenti. |
 
-Modifica il file:
+## Setup PC ufficio (Windows)
 
-`%APPDATA%\Claude\claude_desktop_config.json`
-(percorso completo: `C:\Users\<TUO_UTENTE>\AppData\Roaming\Claude\claude_desktop_config.json`)
+Stesse istruzioni, percorsi adattati. Esempio config:
 
 ```json
 {
   "mcpServers": {
     "inveni-cantieri": {
-      "command": "inveni-cantieri-mcp.exe",
+      "command": "C:/Projects/inveni-cantieri/.venv/Scripts/inveni-cantieri-mcp.exe",
       "env": {
-        "INVENI_CANTIERI_DATA": "C:/Users/<TUO_UTENTE>/Documents/MEGA/INVENI/cantieri.json"
+        "INVENI_CANTIERI_DATA": "C:/Users/<UTENTE>/MEGA/SOCIETA/Inveni/MCP-Cantieri/cantieri.json",
+        "INVENI_CANTIERI_BASE": "C:/Users/<UTENTE>/MEGA/SOCIETA/Inveni/cantieri e contratti"
       }
     }
   }
 }
 ```
-
-> ⚠️ Sostituisci `<TUO_UTENTE>` col tuo nome utente Windows. Usa le **slash
-> normali** `/` nel JSON (più semplici); in alternativa raddoppia i backslash:
-> `"C:\\Users\\..."`.
-
-Riavvia Claude Desktop sul PC.
-
-### 4. Caricamento insieme al Windows VPS Manager
-
-Sono due server MCP indipendenti, quindi convivono nella stessa configurazione:
-
-```json
-{
-  "mcpServers": {
-    "windows-vps-manager": { "command": "vps-manager-mcp" },
-    "inveni-cantieri": {
-      "command": "inveni-cantieri-mcp",
-      "env": { "INVENI_CANTIERI_DATA": "/Users/aloefrancesco/Documents/MEGA/INVENI/cantieri.json" }
-    }
-  }
-}
-```
-
-## Come funziona la sincronizzazione
-
-- Il server MCP **rilegge il file ad ogni chiamata**, quindi quando MEGA
-  sincronizza una modifica fatta sull'altra macchina la vedi subito senza
-  riavviare Claude Desktop.
-- Oggi i tool sono **read-only**: nessuna scrittura, nessun rischio di
-  conflitti MEGA. Se in futuro aggiungiamo funzioni di scrittura conviene
-  passare a un file per cantiere o a un piccolo SQLite condiviso.
 
 ## Esempi di chiamata da Claude
 
-Una volta installato e configurato, in Claude Desktop puoi chiedere cose tipo:
+> "Quanto è pronto il cantiere Don Bosco?"
+> → `stato_preparazione("DONBOSCO")` → "55% completato, mancano 4 documenti bloccanti."
+>
+> "Cosa manca per avviare Pettirosso?"
+> → `checklist_preparazione("PETTIROSSO")` → tabella PRESENTE/MANCANTE per categoria.
+>
+> "Generami la dichiarazione di organico medio per Casaletto."
+> → `genera_documento("dichiarazione_organico_medio", "CASALETTO")` → markdown pronto da copiare in Word.
 
-> "Quali scadenze critiche ha il cantiere C001?"
-> "Generami il verbale di sospensione per il cantiere C003"
-> "Quanto vale il SAL di febbraio del cantiere di Milano?"
-> "Prepara la PEC al RUP del cantiere C001 per l'emissione del SAL"
+## Aggiungere un nuovo cantiere
 
-## Variabile d'ambiente
+1. Crea la cartella su MEGA: `<base>/Nuovo Cantiere/01 - Documenti Aziendali/...` ecc.
+2. Aggiungi un nuovo blocco al file `cantieri.json` con `id`, `nome`, `cartella` (= nome esatto della cartella su MEGA), e gli altri campi.
+3. Niente da reinstallare: il server rilegge il JSON ad ogni chiamata.
 
-| Variabile | Default | Descrizione |
-|---|---|---|
-| `INVENI_CANTIERI_DATA` | `<package>/data/cantieri.json` | Percorso assoluto del file JSON dei cantieri. Imposta su file dentro MEGA per la sincronizzazione cross-PC. |
+## Aggiungere/modificare voci della checklist
 
-Se la variabile non è impostata, il server usa il file di esempio incluso nel
-package (utile per test, ma non condiviso).
+Modifica `inveni_cantieri/checklist.py`: la struttura `CHECKLIST` è una mappa
+categoria → lista voci, ogni voce è una tupla `(nome_visualizzato, keyword,
+obbligatorieta, ambito)`. Il matching è case-insensitive e ignora accenti,
+spazi, underscore e trattini, quindi le keyword vanno scelte come radici
+significative (es. `"durc"`, `"polizza", "rct"`).
 
-## Note v0.1
+## Note
 
-- Read-only: i tool non modificano `cantieri.json`.
-- `notifica_committente` non invia PEC reali (`stato: "simulata"`); per l'invio
-  reale sostituire `inveni_cantieri/notifications.py::notifica` con un client
-  PEC/SMTP.
-- `genera_documento` produce markdown; per esportare in PDF si può aggiungere
-  un passaggio con `weasyprint` o simile.
-- Per integrare un backend INVENI reale (DB / REST) sostituire solo
-  `inveni_cantieri/repo.py`: l'interfaccia resta invariata.
+- Tool **read-only** sul filesystem: non sposta né cancella file, solo legge nomi.
+- Per `genera_documento` l'output è markdown — copialo in Word e completa i campi `___` con i dati specifici.
+- Per integrare un backend reale (DB / REST INVENI) sostituire solo
+  `inveni_cantieri/repo.py`.
