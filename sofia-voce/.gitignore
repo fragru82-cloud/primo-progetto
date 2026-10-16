@@ -1,0 +1,5 @@
+# Registrazioni e vocali: dati personali, mai nel repository
+*.wav
+*.ogg
+*.m4a
+*.mp3

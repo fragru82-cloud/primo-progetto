@@ -1,0 +1,5 @@
+chatterbox-tts==0.1.7
+faster-whisper==1.2.1
+jiwer==4.0.0
+num2words==0.5.14
+setuptools<81
