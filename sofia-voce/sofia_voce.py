@@ -22,6 +22,30 @@ MAX_TENTATIVI = 5
 VELOCITA = 1.15          # +15%
 PAUSA_S = 0.25           # pausa tra frasi
 PARAMS = dict(exaggeration=0.5, cfg_weight=0.4, temperature=0.6)
+ERRORE_MAX = 0.15        # oltre questa soglia la frase NON viene mandata come vocale
+MAX_CARATTERI = 600      # testi più lunghi vanno come messaggio scritto
+
+# Contenuti che non si leggono a voce: file, link, email, codici, elenchi.
+NON_DA_VOCE = [
+    r"\b[\w-]+\.(pdf|txt|docx?|xlsx?|csv|zip|jpe?g|png|ogg|mp3)\b",
+    r"https?://|www\.",
+    r"[\w.+-]+@[\w-]+\.[\w.]+",
+    r"\b[A-Z0-9]{2,}[0-9][A-Z0-9]{4,}\b",
+    r"(^|\n)\s*(\d+[.)]|[-*•])\s",
+]
+
+
+class NonAdattoAVoce(Exception):
+    """Il testo va mandato come messaggio scritto, non come vocale."""
+
+
+def adatto_a_voce(testo):
+    if len(testo) > MAX_CARATTERI:
+        return False, "testo troppo lungo"
+    for pat in NON_DA_VOCE:
+        if re.search(pat, testo, flags=re.IGNORECASE | re.MULTILINE):
+            return False, "contiene file, link, email, codici o elenchi"
+    return True, ""
 
 # Correzioni di pronuncia: testo scritto -> come deve leggerlo il motore.
 LESSICO = {
@@ -91,10 +115,16 @@ class SofiaVoce:
         return migliore
 
     def sintetizza(self, testo, out_ogg):
+        """Crea il vocale. Solleva NonAdattoAVoce se va mandato come testo."""
+        ok, motivo = adatto_a_voce(testo)
+        if not ok:
+            raise NonAdattoAVoce(motivo)
         pezzi, report = [], []
         silenzio = torch.zeros(1, int(self.sr * PAUSA_S))
         for f in frasi(testo):
             err, wav, sentito = self.frase(f)
+            if err > ERRORE_MAX:
+                raise NonAdattoAVoce(f"pronuncia non affidabile ({err:.0%} di errori): {f}")
             pezzi += [wav, silenzio]
             report.append((round(err, 2), f, sentito.strip()))
         audio = torch.cat(pezzi[:-1], dim=1)
