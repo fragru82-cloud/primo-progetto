@@ -23,3 +23,18 @@ personale coperto dalla liberatoria firmata con Globalink S.r.l.s.
 
 ## Correzioni di pronuncia
 Dizionario `LESSICO` in `sofia_voce.py`: aggiungere qui le parole che il motore legge male.
+
+## Servizio per il bridge WhatsApp (server.py)
+Stesso contratto del servizio "Voce Sofia" chiamato da `send-voice-paracadute.js` sulla VPS:
+`GET /health` e `POST /tts` con `Authorization: Bearer <token>`, risposta `audio/ogg`.
+Risponde 422 quando il testo non va letto a voce (file, link, elenchi, testo lungo) o la
+pronuncia supera il 15% di errori: il bridge passa allora a Elsa / testo.
+
+    set SOFIA_TOKEN=<token di sofia-voice.json>
+    set SOFIA_REF=<percorso>\ref1.wav
+    set SOFIA_PORT=8196
+    set SOFIA_TENTATIVI=2
+    set SOFIA_WHISPER=small
+    python server.py
+
+Su CPU (senza NVIDIA) un vocale breve richiede circa 1-1,5 minuti; con GPU pochi secondi.

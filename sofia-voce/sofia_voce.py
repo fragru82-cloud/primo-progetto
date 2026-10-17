@@ -4,6 +4,7 @@ Per ogni frase genera fino a MAX_TENTATIVI versioni, le ritrascrive con Whisper
 e tiene quella con meno errori. Poi unisce le frasi, accelera leggermente
 (senza alterare il timbro) ed esporta in OGG/Opus per WhatsApp/Telegram.
 """
+import os
 import re
 import subprocess
 import sys
@@ -18,7 +19,8 @@ from chatterbox.mtl_tts import ChatterboxMultilingualTTS
 from faster_whisper import WhisperModel
 from num2words import num2words
 
-MAX_TENTATIVI = 5
+MAX_TENTATIVI = int(os.environ.get("SOFIA_TENTATIVI", "5"))  # su CPU conviene 2
+MODELLO_ASR = os.environ.get("SOFIA_WHISPER", "medium")      # su CPU conviene "small"
 VELOCITA = 1.15          # +15%
 PAUSA_S = 0.25           # pausa tra frasi
 PARAMS = dict(exaggeration=0.5, cfg_weight=0.4, temperature=0.6)
@@ -81,11 +83,13 @@ def frasi(testo):
 
 
 class SofiaVoce:
-    def __init__(self, riferimento, device="cpu"):
-        torch.set_num_threads(4)
+    def __init__(self, riferimento, device=None):
+        device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+        if device == "cpu":
+            torch.set_num_threads(max(1, (os.cpu_count() or 4) - 2))
         self.ref = riferimento
         self.tts = ChatterboxMultilingualTTS.from_pretrained(device=device)
-        self.asr = WhisperModel("medium", device=device, compute_type="int8")
+        self.asr = WhisperModel(MODELLO_ASR, device=device, compute_type="int8" if device == "cpu" else "float16")
         self.sr = self.tts.sr
 
     def _errore(self, wav, atteso):

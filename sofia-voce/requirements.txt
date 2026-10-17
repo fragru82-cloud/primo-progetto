@@ -3,3 +3,5 @@ faster-whisper==1.2.1
 jiwer==4.0.0
 num2words==0.5.14
 setuptools<81
+fastapi==0.143.2
+uvicorn==0.54.0
